@@ -1,0 +1,15 @@
+====================================================
+🎭 BUNU KİM SÖYLEDİ? - OYUN REHBERİ
+====================================================
+
+Arkadaş grubunla Wi-Fi üzerinden oynayabileceğin yerel parti oyunu!
+
+NASIL ÇALIŞTIRILIR?
+1. Bilgisayarında Python kurulu olduğundan emin ol (python.org).
+2. "run.bat" dosyasına çift tıkla! (Gerekli paketler otomatik kurulacak ve sunucu başlayacak).
+3. Açılan siyah pencereyi kapatma.
+4. Bilgisayarının tarayıcısından (Chrome/Edge vb.) şu adrese gir:
+   http://localhost:8000/host
+5. Aynı Wi-Fi'a bağlı arkadaşların telefonlarından ekrandaki QR kodu okutarak odaya katılabilir!
+
+İyi eğlenceler! 🚀

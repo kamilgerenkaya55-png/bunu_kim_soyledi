@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🎭 Bunu Kim Söyledi? - Oyuncu</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        body { font-family: 'Outfit', sans-serif; -webkit-tap-highlight-color: transparent; }
+    </style>
+</head>
+<body class="bg-slate-950 text-white min-h-screen flex flex-col justify-between selection:bg-purple-500 selection:text-white pb-20">
+
+    <!-- ÜST BİLGİ PANELİ -->
+    <header class="p-4 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 flex justify-between items-center sticky top-0 z-40">
+        <div class="flex items-center space-x-2">
+            <span class="text-2xl">🎭</span>
+            <span class="font-extrabold text-sm tracking-wide bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                BUNU KİM SÖYLEDİ?
+            </span>
+        </div>
+        <div id="player-profile-badge" class="hidden flex items-center space-x-2 bg-slate-800 px-3 py-1 rounded-full border border-slate-700">
+            <span id="header-avatar" class="text-lg">🦊</span>
+            <span id="header-name" class="text-xs font-bold text-slate-200">...</span>
+            <span id="header-score" class="text-xs font-black text-amber-400">0P</span>
+        </div>
+    </header>
+
+    <!-- ANA İÇERİK KONTEYNERİ -->
+    <main class="flex-1 p-5 max-w-md mx-auto w-full flex flex-col justify-center">
+
+        <!-- 1. GİRİŞ EKRANI (İsim ve Avatar Seçimi) -->
+        <section id="screen-login" class="flex flex-col space-y-6">
+            <div class="text-center space-y-2">
+                <h1 class="text-3xl font-black text-white">Hoş Geldin!</h1>
+                <p class="text-sm text-slate-400">Takma adını ve avatarını seçerek odaya katıl.</p>
+            </div>
+
+            <!-- Avatar Seçici -->
+            <div>
+                <label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Avatarını Seç</label>
+                <div id="avatar-grid" class="grid grid-cols-6 gap-2 bg-slate-900 p-3 rounded-2xl border border-slate-800">
+                    <!-- Emojiler JS ile eklenecek -->
+                </div>
+            </div>
+
+            <!-- İsim Girişi -->
+            <div>
+                <label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">İsmin</label>
+                <input id="input-nickname" type="text" maxlength="15" placeholder="Örn: Efsanevi Dedektif" 
+                    class="w-full bg-slate-900 border-2 border-slate-800 focus:border-purple-500 rounded-2xl px-4 py-3.5 text-base font-bold text-white placeholder-slate-600 focus:outline-none transition">
+            </div>
+
+            <button onclick="joinGame()" class="w-full py-4 rounded-2xl font-black text-lg text-white bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90 active:scale-95 transition shadow-lg shadow-purple-600/30">
+                ODAYA KATIL 🚀
+            </button>
+        </section>
+
+        <!-- 2. BEKLEME EKRANI (LOBİDE BEKLENİYOR) -->
+        <section id="screen-waiting" class="hidden flex flex-col items-center text-center space-y-4">
+            <div class="text-6xl animate-bounce mb-2">🎉</div>
+            <h2 class="text-2xl font-black text-white">Lobidesin!</h2>
+            <p class="text-sm text-slate-400 max-w-xs">
+                Host oyunu başlatana kadar bekle. Bu sırada alttaki butonlarla reaksiyon atabilir veya sohbet edebilirsin!
+            </p>
+            <div class="bg-slate-900/90 border border-slate-800 px-6 py-4 rounded-2xl w-full">
+                <span class="text-xs text-slate-500 uppercase font-bold tracking-wider">Durum</span>
+                <p class="text-purple-400 font-bold mt-1 animate-pulse">Diğer oyuncuların katılması bekleniyor...</p>
+            </div>
+        </section>
+
+        <!-- 3. SIR YAZMA EKRANI -->
+        <section id="screen-submit" class="hidden flex flex-col space-y-4">
+            <div class="text-center space-y-1">
+                <span class="text-4xl">🤫</span>
+                <h2 class="text-2xl font-black text-white">Sırrını Yaz!</h2>
+                <p class="text-xs text-slate-400">
+                    Kimsenin senin hakkında bilmediği bir anını, utanç verici bir hikayeni veya komik bir sırrını yaz.
+                </p>
+            </div>
+
+            <div class="space-y-2">
+                <textarea id="input-secret" rows="4" maxlength="180" placeholder="Örn: İlkokulda yangın butonuna basıp okulu tahliye ettirmiştim..." 
+                    class="w-full bg-slate-900 border-2 border-slate-800 focus:border-pink-500 rounded-2xl p-4 text-sm font-medium text-white placeholder-slate-600 focus:outline-none transition resize-none"></textarea>
+                <div class="flex justify-between text-[11px] text-slate-500 px-1">
+                    <span>* Tamamen anonim gösterilecek</span>
+                    <span id="char-count">0 / 180</span>
+                </div>
+            </div>
+
+            <button id="btn-submit-secret" onclick="submitSecret()" class="w-full py-4 rounded-2xl font-black text-base text-white bg-gradient-to-r from-pink-600 to-purple-600 active:scale-95 transition shadow-lg shadow-pink-600/30">
+                GİZLİ GÖNDER 🚀
+            </button>
+
+            <!-- Gönderildi Onayı -->
+            <div id="submit-success-card" class="hidden bg-emerald-950/60 border border-emerald-500/40 p-4 rounded-2xl text-center">
+                <span class="text-emerald-400 font-bold text-sm">✅ Sırrın kaydedildi! Diğerleri bekleniyor...</span>
+            </div>
+        </section>
+
+        <!-- 4. TAHMİN / OY VERME EKRANI -->
+        <section id="screen-vote" class="hidden flex flex-col space-y-4">
+            <div class="text-center">
+                <span class="text-xs uppercase font-extrabold tracking-wider text-pink-400">BUNU KİM SÖYLEDİ?</span>
+                <div class="mt-2 p-4 bg-slate-900 border border-slate-800 rounded-2xl text-sm font-bold text-slate-200 italic shadow-inner">
+                    “<span id="phone-secret-text">...</span>”
+                </div>
+            </div>
+
+            <p class="text-xs text-center text-slate-400">Tahmin ettiğin kişinin üzerine tıkla:</p>
+
+            <div id="vote-options-grid" class="grid grid-cols-2 gap-3">
+                <!-- Seçenek butonları JS ile eklenecek -->
+            </div>
+
+            <div id="vote-confirmed-msg" class="hidden text-center p-3 bg-purple-950/60 border border-purple-500/40 rounded-xl text-purple-300 text-xs font-bold">
+                🔒 Oyun kaydedildi! Sonuçlar için büyük ekrana bak.
+            </div>
+        </section>
+
+        <!-- 5. TUR SONUCU EKRANI -->
+        <section id="screen-reveal" class="hidden flex flex-col items-center text-center space-y-4">
+            <div id="reveal-feedback-icon" class="text-6xl">🎉</div>
+            <h2 id="reveal-feedback-title" class="text-2xl font-black">...</h2>
+            <p id="reveal-feedback-desc" class="text-sm text-slate-300">...</p>
+            <div class="bg-slate-900 border border-slate-800 px-6 py-3 rounded-2xl">
+                <span class="text-xs text-slate-400">Güncel Puanın:</span>
+                <span id="reveal-current-score" class="text-xl font-black text-amber-400 ml-2">0</span>
+            </div>
+        </section>
+
+        <!-- 6. OYUN BİTTİ EKRANI -->
+        <section id="screen-gameover" class="hidden flex flex-col items-center text-center space-y-4">
+            <span class="text-6xl animate-bounce">🏆</span>
+            <h2 class="text-3xl font-black text-white">Oyun Bitti!</h2>
+            <p id="final-rank-text" class="text-base text-purple-300 font-bold">Liderlik tablosu için büyük ekrana bakın!</p>
+        </section>
+
+    </main>
+
+    <!-- ALT SABİT BUTONLAR: REAKSİYONLAR VE CHAT -->
+    <div id="bottom-action-bar" class="hidden fixed bottom-0 left-0 right-0 p-3 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 flex justify-between items-center z-50">
+        <!-- Reaksiyon Butonları -->
+        <div class="flex items-center space-x-2">
+            <button onclick="sendReaction('🔥')" class="text-xl p-2 bg-slate-800 active:scale-125 rounded-xl border border-slate-700 transition">🔥</button>
+            <button onclick="sendReaction('😂')" class="text-xl p-2 bg-slate-800 active:scale-125 rounded-xl border border-slate-700 transition">😂</button>
+            <button onclick="sendReaction('😱')" class="text-xl p-2 bg-slate-800 active:scale-125 rounded-xl border border-slate-700 transition">😱</button>
+            <button onclick="sendReaction('👏')" class="text-xl p-2 bg-slate-800 active:scale-125 rounded-xl border border-slate-700 transition">👏</button>
+        </div>
+
+        <!-- Chat Açma Butonu -->
+        <button onclick="toggleChat()" class="flex items-center space-x-2 bg-indigo-600 px-4 py-2 rounded-xl text-xs font-bold text-white shadow-md active:scale-95 transition">
+            <span>💬</span>
+            <span>Sohbet</span>
+        </button>
+    </div>
+
+    <!-- SOHBET MODALI / ÇEKMECESİ -->
+    <div id="chat-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex flex-col justify-end">
+        <div class="bg-slate-900 border-t border-slate-800 rounded-t-3xl p-5 max-w-md mx-auto w-full h-[70vh] flex flex-col">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-800">
+                <h3 class="font-bold text-slate-200 text-sm">Oda Sohbeti</h3>
+                <button onclick="toggleChat()" class="text-slate-400 hover:text-white text-lg font-bold">✕</button>
+            </div>
+
+            <!-- Mesajlar Listesi -->
+            <div id="chat-messages" class="flex-1 overflow-y-auto py-3 space-y-2 text-xs">
+                <!-- Mesajlar JS ile eklenecek -->
+            </div>
+
+            <!-- Mesaj Gönderme Çubuğu -->
+            <div class="flex space-x-2 pt-2 border-t border-slate-800">
+                <input id="chat-input" type="text" placeholder="Bir mesaj yaz..." maxlength="100"
+                    class="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500">
+                <button onclick="sendChatMessage()" class="bg-purple-600 px-4 py-2 rounded-xl text-xs font-bold text-white active:scale-95 transition">
+                    Gönder
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JS Mantığı -->
+    <script>
+        const avatars = ["🦊", "🐼", "🦁", "🚀", "🧙", "👾", "🤠", "🐱", "🦄", "🍕", "🎸", "⚡"];
+        let selectedAvatar = "🦊";
+        let playerId = localStorage.getItem('player_id') || ('p_' + Math.random().toString(36).substr(2, 9));
+        localStorage.setItem('player_id', playerId);
+
+        let myName = "";
+        let myScore = 0;
+        let socket = null;
+
+        // Avatar butonlarını oluştur
+        const avatarGrid = document.getElementById('avatar-grid');
+        avatars.forEach(av => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = `text-2xl p-2 rounded-xl border transition ${av === selectedAvatar ? 'border-purple-500 bg-purple-950/60' : 'border-slate-800'}`;
+            btn.innerText = av;
+            btn.onclick = () => {
+                selectedAvatar = av;
+                document.querySelectorAll('#avatar-grid button').forEach(b => {
+                    b.classList.remove('border-purple-500', 'bg-purple-950/60');
+                    b.classList.add('border-slate-800');
+                });
+                btn.classList.add('border-purple-500', 'bg-purple-950/60');
+                btn.classList.remove('border-slate-800');
+            };
+            avatarGrid.appendChild(btn);
+        });
+
+        // Karakter sayacı
+        const secretInput = document.getElementById('input-secret');
+        secretInput.addEventListener('input', (e) => {
+            document.getElementById('char-count').innerText = `${e.target.value.length} / 180`;
+        });
+
+        function showScreen(screenId) {
+            ['screen-login', 'screen-waiting', 'screen-submit', 'screen-vote', 'screen-reveal', 'screen-gameover'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            document.getElementById(screenId).classList.remove('hidden');
+        }
+
+        function joinGame() {
+            const nameInput = document.getElementById('input-nickname');
+            myName = nameInput.value.trim();
+            if (!myName) {
+                alert("Lütfen bir isim yazın!");
+                return;
+            }
+
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${wsProtocol}//${window.location.host}/ws/player/${playerId}`;
+
+            socket = new WebSocket(wsUrl);
+
+            socket.onopen = () => {
+                socket.send(JSON.stringify({
+                    action: "join",
+                    name: myName,
+                    avatar: selectedAvatar
+                }));
+
+                // Üst çubuğu güncelle
+                document.getElementById('player-profile-badge').classList.remove('hidden');
+                document.getElementById('header-avatar').innerText = selectedAvatar;
+                document.getElementById('header-name').innerText = myName;
+                document.getElementById('bottom-action-bar').classList.remove('hidden');
+                showScreen('screen-waiting');
+            };
+
+            socket.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                handleServerMessage(data);
+            };
+
+            socket.onclose = () => {
+                console.warn("Bağlantı koptu.");
+            };
+        }
+
+        function handleServerMessage(data) {
+            console.log("Oyuncu mesaj aldı:", data);
+
+            if (data.type === 'game_started') {
+                showScreen('screen-submit');
+                document.getElementById('btn-submit-secret').classList.remove('hidden');
+                document.getElementById('submit-success-card').classList.add('hidden');
+                document.getElementById('input-secret').value = '';
+            }
+            else if (data.type === 'new_round') {
+                showScreen('screen-vote');
+                document.getElementById('phone-secret-text').innerText = data.secret_text;
+                document.getElementById('vote-confirmed-msg').classList.add('hidden');
+
+                const grid = document.getElementById('vote-options-grid');
+                grid.innerHTML = '';
+
+                data.options.forEach(opt => {
+                    const btn = document.createElement('button');
+                    btn.className = 'p-3 bg-slate-900 border border-slate-800 rounded-2xl flex items-center space-x-2 active:scale-95 transition text-left';
+                    btn.innerHTML = `<span class="text-2xl">${opt.avatar}</span><span class="font-bold text-xs text-white truncate">${opt.name}</span>`;
+                    
+                    btn.onclick = () => {
+                        // Oy gönder
+                        if (socket) {
+                            socket.send(JSON.stringify({
+                                action: "vote",
+                                guessed_player_id: opt.id
+                            }));
+                        }
+                        // Butonları kilitle
+                        document.querySelectorAll('#vote-options-grid button').forEach(b => {
+                            b.disabled = true;
+                            b.classList.add('opacity-40');
+                        });
+                        btn.classList.remove('opacity-40');
+                        btn.classList.add('border-emerald-500', 'bg-emerald-950/60');
+                        document.getElementById('vote-confirmed-msg').classList.remove('hidden');
+                        
+                        if (navigator.vibrate) navigator.vibrate(50);
+                    };
+                    grid.appendChild(btn);
+                });
+            }
+            else if (data.type === 'round_reveal') {
+                showScreen('screen-reveal');
+                const isAuthor = data.author.id === playerId;
+                const guessedCorrectly = data.correct_voters.includes(myName);
+
+                // Kendi puanımızı güncelle
+                const me = data.leaderboard.find(p => p.id === playerId);
+                if (me) {
+                    myScore = me.score;
+                    document.getElementById('header-score').innerText = `${myScore}P`;
+                    document.getElementById('reveal-current-score').innerText = `${myScore} Puan`;
+                }
+
+                const icon = document.getElementById('reveal-feedback-icon');
+                const title = document.getElementById('reveal-feedback-title');
+                const desc = document.getElementById('reveal-feedback-desc');
+
+                if (isAuthor) {
+                    icon.innerText = "🎭";
+                    title.innerText = "Bu senin sırrındı!";
+                    const trickedCount = data.wrong_voters.length;
+                    desc.innerText = `${trickedCount} kişiyi yanılttın (+${trickedCount * 50} blöf puanı kazandın!)`;
+                } else if (guessedCorrectly) {
+                    icon.innerText = "🎯";
+                    title.innerText = "Tebrikler, Bildin!";
+                    desc.innerText = `+100 Puan kazandın! Gerçekten ${data.author.name} söylemişti.`;
+                } else {
+                    icon.innerText = "🤡";
+                    title.innerText = "Yanıldın!";
+                    desc.innerText = `Bu sözün sahibi aslında: ${data.author.avatar} ${data.author.name} idi.`;
+                }
+            }
+            else if (data.type === 'game_over') {
+                showScreen('screen-gameover');
+            }
+            else if (data.type === 'chat_message') {
+                appendChatMessage(data);
+            }
+            else if (data.type === 'reaction') {
+                spawnReaction(data.emoji);
+            }
+        }
+
+        function submitSecret() {
+            const secret = document.getElementById('input-secret').value.trim();
+            if (!secret) {
+                alert("Lütfen bir sır veya komik anı yazın!");
+                return;
+            }
+
+            if (socket) {
+                socket.send(JSON.stringify({
+                    action: "submit_secret",
+                    secret: secret
+                }));
+            }
+
+            document.getElementById('btn-submit-secret').classList.add('hidden');
+            document.getElementById('submit-success-card').classList.remove('hidden');
+        }
+
+        function sendReaction(emoji) {
+            if (socket) {
+                socket.send(JSON.stringify({
+                    action: "reaction",
+                    emoji: emoji
+                }));
+            }
+        }
+
+        function toggleChat() {
+            const modal = document.getElementById('chat-modal');
+            modal.classList.toggle('hidden');
+        }
+
+        function sendChatMessage() {
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if (text && socket) {
+                socket.send(JSON.stringify({
+                    action: "chat",
+                    text: text
+                }));
+                input.value = '';
+            }
+        }
+
+        function appendChatMessage(msg) {
+            const container = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.className = 'bg-slate-800/80 p-2 rounded-xl flex items-start space-x-2';
+            div.innerHTML = `
+                <span class="text-base">${msg.avatar}</span>
+                <div class="overflow-hidden">
+                    <span class="font-bold text-purple-300 mr-1">${msg.sender}:</span>
+                    <span class="text-slate-200">${msg.text}</span>
+                </div>
+            `;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function spawnReaction(emoji) {
+            const bubble = document.createElement('div');
+            bubble.className = 'reaction-bubble';
+            bubble.innerText = emoji;
+            bubble.style.left = `${Math.random() * 70 + 15}%`;
+            document.body.appendChild(bubble);
+            setTimeout(() => bubble.remove(), 2000);
+        }
+    </script>
+</body>
+</html>

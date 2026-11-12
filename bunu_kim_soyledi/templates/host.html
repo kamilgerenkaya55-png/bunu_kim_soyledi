@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎭 Bunu Kim Söyledi? - Büyük Ekran (Host)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        body { font-family: 'Outfit', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-950 text-white min-h-screen flex flex-col justify-between overflow-x-hidden selection:bg-purple-500 selection:text-white">
+
+    <!-- ÜST ÇUBUK -->
+    <header class="p-6 flex justify-between items-center bg-slate-900/60 backdrop-blur-md border-b border-slate-800">
+        <div class="flex items-center space-x-4">
+            <span class="text-4xl">🎭</span>
+            <div>
+                <h1 class="text-2xl font-black bg-gradient-to-r from-purple-400 via-pink-400 to-indigo-400 bg-clip-text text-transparent">
+                    BUNU KİM SÖYLEDİ?
+                </h1>
+                <p class="text-xs text-slate-400">Wi-Fi Sosyal Parti Oyunu</p>
+            </div>
+        </div>
+        
+        <div class="flex items-center space-x-6">
+            <div class="bg-indigo-950/80 border border-indigo-500/30 px-5 py-2 rounded-2xl flex items-center space-x-3">
+                <span class="w-3 h-3 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="text-sm text-slate-300">Wi-Fi Giriş:</span>
+                <span class="text-base font-bold text-indigo-300 tracking-wider">{{ join_url }}</span>
+            </div>
+            <div id="state-badge" class="px-4 py-1.5 rounded-full text-xs font-bold tracking-wider uppercase bg-purple-900/50 text-purple-300 border border-purple-500/30">
+                LOBİ
+            </div>
+        </div>
+    </header>
+
+    <!-- ANA SAHNE İÇERİĞİ -->
+    <main class="flex-1 flex flex-col items-center justify-center p-8 max-w-6xl mx-auto w-full relative">
+
+        <!-- 1. AŞAMA: LOBİ -->
+        <section id="stage-lobby" class="w-full flex flex-col md:flex-row items-center justify-around gap-12">
+            <!-- Sol: QR Kod ve Katılım Bilgisi -->
+            <div class="flex flex-col items-center text-center bg-slate-900/80 p-8 rounded-3xl border border-slate-800 shadow-2xl">
+                <div class="bg-white p-4 rounded-2xl shadow-xl mb-6 transform hover:scale-105 transition-transform duration-300">
+                    <img id="qr-img" src="{{ qr_code }}" alt="Katılım QR Kodu" class="w-64 h-64 object-contain">
+                </div>
+                <h2 class="text-2xl font-black text-white mb-2">TELEFONUNLA KATIL!</h2>
+                <p class="text-slate-400 text-sm max-w-xs mb-4">
+                    Kameranı açıp QR kodu tara veya tarayıcına şu adresi yaz:
+                </p>
+                <div class="bg-purple-950/60 border border-purple-500/40 px-4 py-2 rounded-xl text-purple-300 font-mono font-bold text-lg">
+                    {{ join_url }}
+                </div>
+            </div>
+
+            <!-- Sağ: Katılan Oyuncular -->
+            <div class="flex-1 w-full max-w-lg bg-slate-900/50 p-8 rounded-3xl border border-slate-800/80 flex flex-col h-[480px]">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-slate-200">
+                        Katılan Oyuncular (<span id="lobby-player-count" class="text-pink-400 font-black">0</span>)
+                    </h3>
+                    <span class="text-xs text-slate-500">En az 2 kişi gerekir</span>
+                </div>
+                
+                <div id="lobby-players-grid" class="flex-1 grid grid-cols-2 gap-3 overflow-y-auto pr-2 content-start">
+                    <!-- Oyuncu kartları JS ile eklenecek -->
+                </div>
+
+                <button id="btn-start-game" onclick="startGame()" class="mt-6 w-full py-4 rounded-2xl font-black text-lg text-white bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 hover:opacity-90 active:scale-98 transition shadow-lg shadow-purple-600/30 disabled:opacity-40 disabled:cursor-not-allowed">
+                    OYUNU BAŞLAT 🚀
+                </button>
+            </div>
+        </section>
+
+        <!-- 2. AŞAMA: SIR / İTİRAF TOPLAMA -->
+        <section id="stage-submission" class="hidden w-full flex flex-col items-center text-center">
+            <div class="text-6xl mb-6 animate-bounce">🤫</div>
+            <h2 class="text-4xl font-black mb-4 bg-gradient-to-r from-yellow-300 via-pink-400 to-purple-400 bg-clip-text text-transparent">
+                SIRLARINIZI YAZMA VAKTİ!
+            </h2>
+            <p class="text-xl text-slate-300 max-w-xl mb-8">
+                Telefonlarınızın ekranına bakın! Kimsenin bilmediği bir anınızı, sırrınızı ya da komik bir alışkanlığınızı yazıp gönderin.
+            </p>
+
+            <!-- İlerleme Çubuğu -->
+            <div class="w-full max-w-md bg-slate-800 rounded-full h-5 p-1 mb-6 border border-slate-700">
+                <div id="submission-progress-bar" class="bg-gradient-to-r from-purple-500 to-pink-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+            <p class="text-lg font-bold text-slate-300 mb-8">
+                <span id="submitted-count" class="text-pink-400">0</span> / <span id="total-submission-count">0</span> Oyuncu Gönderdi
+            </p>
+
+            <!-- Gönderenlerin listesi -->
+            <div id="submission-players-list" class="flex flex-wrap justify-center gap-4 max-w-2xl">
+                <!-- Oyuncu avatarları ve durumları -->
+            </div>
+        </section>
+
+        <!-- 3. AŞAMA: TAHMİN & OYLAMA -->
+        <section id="stage-guessing" class="hidden w-full flex flex-col items-center text-center">
+            <div class="flex items-center space-x-4 mb-4">
+                <span id="round-badge" class="px-4 py-1.5 rounded-full text-sm font-bold bg-indigo-900/60 text-indigo-300 border border-indigo-500/40">
+                    TUR 1 / 5
+                </span>
+                <div class="flex items-center space-x-2 bg-rose-950/60 border border-rose-500/40 px-5 py-1.5 rounded-full text-rose-300 font-bold text-lg">
+                    <span>⏱️</span>
+                    <span id="timer-display">25</span>s
+                </div>
+            </div>
+
+            <h2 class="text-2xl font-bold text-slate-400 mb-6 uppercase tracking-wider">
+                BUNU KİM SÖYLEMİŞTİR?
+            </h2>
+
+            <!-- Sır Kartı -->
+            <div class="w-full max-w-3xl bg-gradient-to-br from-purple-900/40 via-slate-900/90 to-indigo-900/40 p-10 rounded-3xl border-2 border-purple-500/40 shadow-2xl glow-card mb-8">
+                <p class="text-slate-400 text-5xl font-serif mb-2">“</p>
+                <p id="current-secret-text" class="text-3xl md:text-4xl font-extrabold text-white leading-relaxed px-4">
+                    ...
+                </p>
+                <p class="text-slate-400 text-5xl font-serif mt-2 text-right">”</p>
+            </div>
+
+            <div class="flex items-center space-x-4 text-slate-300 font-bold text-lg mb-6">
+                <span>🗳️ Oy Verenler:</span>
+                <span id="vote-progress-text" class="text-pink-400 text-xl font-black">0 / 0</span>
+            </div>
+
+            <!-- Kimler Oy Verdi Rozetleri -->
+            <div id="voted-avatars" class="flex flex-wrap justify-center gap-3">
+            </div>
+        </section>
+
+        <!-- 4. AŞAMA: AÇIKLAMA (REVEAL) -->
+        <section id="stage-reveal" class="hidden w-full flex flex-col items-center text-center">
+            <h2 class="text-2xl font-bold text-slate-400 mb-2 uppercase tracking-widest">
+                BU SÖZÜN GERÇEK SAHİBİ:
+            </h2>
+
+            <!-- Yazar Kartı (Büyük Reveal) -->
+            <div class="bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 p-1 rounded-3xl shadow-2xl mb-8 pop-in">
+                <div class="bg-slate-950 px-12 py-8 rounded-[22px] flex flex-col items-center">
+                    <span id="reveal-author-avatar" class="text-8xl mb-3 block animate-bounce">🦁</span>
+                    <h3 id="reveal-author-name" class="text-4xl font-black text-white">Ahmet</h3>
+                </div>
+            </div>
+
+            <!-- Sonuç Analizi -->
+            <div class="w-full max-w-3xl grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 text-left">
+                <!-- Doğru Bilenler -->
+                <div class="bg-emerald-950/40 border border-emerald-500/30 p-6 rounded-2xl">
+                    <h4 class="text-emerald-400 font-bold text-lg mb-3 flex items-center">
+                        <span class="mr-2">🎯</span> Doğru Bilenler (+100 Puan)
+                    </h4>
+                    <ul id="correct-voters-list" class="space-y-1 text-slate-200">
+                        <!-- Doğru bilenler -->
+                    </ul>
+                </div>
+
+                <!-- Aldatılanlar / Blöf -->
+                <div class="bg-purple-950/40 border border-purple-500/30 p-6 rounded-2xl">
+                    <h4 class="text-purple-400 font-bold text-lg mb-3 flex items-center">
+                        <span class="mr-2">🎭</span> Blöfe Kananlar (Yazara +50 Puan)
+                    </h4>
+                    <ul id="wrong-voters-list" class="space-y-1 text-slate-200">
+                        <!-- Yanılanlar -->
+                    </ul>
+                </div>
+            </div>
+
+            <button onclick="nextRound()" class="px-10 py-4 rounded-2xl font-black text-lg text-white bg-indigo-600 hover:bg-indigo-500 active:scale-95 transition shadow-lg shadow-indigo-600/30">
+                SIRADAKİ TURA GEÇ ⏩
+            </button>
+        </section>
+
+        <!-- 5. AŞAMA: OYUN BİTTİ / PODYUM -->
+        <section id="stage-gameover" class="hidden w-full flex flex-col items-center text-center">
+            <span class="text-7xl mb-4 animate-bounce">🏆</span>
+            <h2 class="text-5xl font-black mb-8 bg-gradient-to-r from-amber-300 via-pink-400 to-indigo-400 bg-clip-text text-transparent">
+                OYUN BİTTİ! ŞAMPİYONLAR
+            </h2>
+
+            <!-- Podyum -->
+            <div id="podium-container" class="flex justify-center items-end gap-6 mb-12 w-full max-w-2xl h-72">
+                <!-- Podyum basamakları JS ile eklenecek -->
+            </div>
+
+            <button onclick="resetGame()" class="px-10 py-4 rounded-2xl font-black text-lg text-white bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90 active:scale-95 transition shadow-xl shadow-purple-600/30">
+                YENİ OYUN BAŞLAT 🔄
+            </button>
+        </section>
+
+    </main>
+
+    <!-- ALT BİLGİ & CANLI CHAT AKIŞI -->
+    <footer class="p-4 bg-slate-900/60 backdrop-blur-md border-t border-slate-800 flex justify-between items-center text-xs text-slate-400">
+        <div id="chat-ticker" class="flex-1 overflow-hidden h-6 text-slate-300 font-medium">
+            <span class="text-purple-400 font-bold">Sohbet:</span> Odaya hoş geldiniz!
+        </div>
+        <div class="ml-4 flex items-center space-x-2">
+            <span>✨ Python & FastAPI Powered</span>
+        </div>
+    </footer>
+
+    <!-- JS Mantığı -->
+    <script>
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${wsProtocol}//${window.location.host}/ws/host`;
+        let socket = null;
+
+        let playersList = [];
+
+        function connectWebSocket() {
+            socket = new WebSocket(wsUrl);
+
+            socket.onopen = () => {
+                console.log("Host WebSocket bağlandı.");
+            };
+
+            socket.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                handleServerMessage(data);
+            };
+
+            socket.onclose = () => {
+                console.warn("WebSocket koptu, yeniden bağlanılıyor...");
+                setTimeout(connectWebSocket, 2000);
+            };
+        }
+
+        function setStage(stageId) {
+            ['stage-lobby', 'stage-submission', 'stage-guessing', 'stage-reveal', 'stage-gameover'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            document.getElementById(stageId).classList.remove('hidden');
+            
+            const badge = document.getElementById('state-badge');
+            if (stageId === 'stage-lobby') badge.innerText = 'LOBİ';
+            if (stageId === 'stage-submission') badge.innerText = 'SIR TOPLAMA';
+            if (stageId === 'stage-guessing') badge.innerText = 'OYLAMA';
+            if (stageId === 'stage-reveal') badge.innerText = 'AÇIKLAMA';
+            if (stageId === 'stage-gameover') badge.innerText = 'OYUN BİTTİ';
+        }
+
+        function handleServerMessage(data) {
+            console.log("Gelen mesaj:", data);
+
+            if (data.type === 'state_sync' || data.type === 'player_joined' || data.type === 'player_left') {
+                if (data.players) {
+                    playersList = data.players;
+                    updateLobbyPlayers();
+                }
+                if (data.state === 'LOBBY') setStage('stage-lobby');
+            }
+            else if (data.type === 'game_started') {
+                setStage('stage-submission');
+                document.getElementById('submitted-count').innerText = '0';
+                document.getElementById('total-submission-count').innerText = playersList.length;
+                document.getElementById('submission-progress-bar').style.width = '0%';
+                updateSubmissionList([]);
+            }
+            else if (data.type === 'submission_progress') {
+                document.getElementById('submitted-count').innerText = data.submitted_count;
+                document.getElementById('total-submission-count').innerText = data.total_count;
+                const pct = Math.round((data.submitted_count / data.total_count) * 100);
+                document.getElementById('submission-progress-bar').style.width = `${pct}%`;
+                
+                // Oyuncu avatarına checkmark ekle
+                const card = document.getElementById(`sub-player-${data.player_id}`);
+                if (card) {
+                    card.classList.remove('opacity-40');
+                    card.querySelector('.status-dot').classList.remove('bg-amber-400');
+                    card.querySelector('.status-dot').classList.add('bg-emerald-400');
+                }
+            }
+            else if (data.type === 'new_round') {
+                setStage('stage-guessing');
+                document.getElementById('round-badge').innerText = `TUR ${data.round} / ${data.total_rounds}`;
+                document.getElementById('current-secret-text').innerText = data.secret_text;
+                document.getElementById('timer-display').innerText = data.time_limit;
+                document.getElementById('vote-progress-text').innerText = `0 / ${data.options.length}`;
+                
+                // Avatar oylama durumu
+                const votedAvatars = document.getElementById('voted-avatars');
+                votedAvatars.innerHTML = '';
+                data.options.forEach(opt => {
+                    const badge = document.createElement('div');
+                    badge.id = `voter-${opt.id}`;
+                    badge.className = 'flex items-center space-x-2 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl opacity-40 transition-all';
+                    badge.innerHTML = `<span>${opt.avatar}</span><span class="text-xs font-bold text-slate-300">${opt.name}</span>`;
+                    votedAvatars.appendChild(badge);
+                });
+            }
+            else if (data.type === 'timer_tick') {
+                document.getElementById('timer-display').innerText = data.time_left;
+            }
+            else if (data.type === 'vote_progress') {
+                document.getElementById('vote-progress-text').innerText = `${data.voted_count} / ${data.total_voters}`;
+                const badge = document.getElementById(`voter-${data.voter_id}`);
+                if (badge) {
+                    badge.classList.remove('opacity-40');
+                    badge.classList.add('border-emerald-500', 'bg-emerald-950/40');
+                }
+            }
+            else if (data.type === 'round_reveal') {
+                setStage('stage-reveal');
+                document.getElementById('reveal-author-name').innerText = data.author.name;
+                document.getElementById('reveal-author-avatar').innerText = data.author.avatar;
+
+                // Doğru bilenler
+                const correctList = document.getElementById('correct-voters-list');
+                correctList.innerHTML = '';
+                if (data.correct_voters.length === 0) {
+                    correctList.innerHTML = '<li class="text-slate-400 italic">Kimse bilemedi!</li>';
+                } else {
+                    data.correct_voters.forEach(name => {
+                        const li = document.createElement('li');
+                        li.className = 'font-bold text-emerald-300';
+                        li.innerText = `✓ ${name}`;
+                        correctList.appendChild(li);
+                    });
+                }
+
+                // Yanılanlar
+                const wrongList = document.getElementById('wrong-voters-list');
+                wrongList.innerHTML = '';
+                if (data.wrong_voters.length === 0) {
+                    wrongList.innerHTML = '<li class="text-slate-400 italic">Herkes doğru bildi!</li>';
+                } else {
+                    data.wrong_voters.forEach(name => {
+                        const li = document.createElement('li');
+                        li.className = 'text-purple-300';
+                        li.innerText = `✗ ${name}`;
+                        wrongList.appendChild(li);
+                    });
+                }
+
+                // Konfeti patlat
+                confetti({
+                    particleCount: 80,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
+            }
+            else if (data.type === 'game_over') {
+                setStage('stage-gameover');
+                renderPodium(data.leaderboard);
+                confetti({
+                    particleCount: 150,
+                    spread: 100,
+                    origin: { y: 0.5 }
+                });
+            }
+            else if (data.type === 'chat_message') {
+                const ticker = document.getElementById('chat-ticker');
+                ticker.innerHTML = `<span class="font-bold text-purple-400">${data.avatar} ${data.sender}:</span> ${data.text}`;
+            }
+            else if (data.type === 'reaction') {
+                spawnReaction(data.emoji);
+            }
+            else if (data.type === 'error') {
+                alert(data.message);
+            }
+        }
+
+        function updateLobbyPlayers() {
+            document.getElementById('lobby-player-count').innerText = playersList.length;
+            const grid = document.getElementById('lobby-players-grid');
+            grid.innerHTML = '';
+
+            playersList.forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'bg-slate-800/80 border border-slate-700/80 p-3 rounded-2xl flex items-center space-x-3 pop-in';
+                card.innerHTML = `
+                    <span class="text-3xl">${p.avatar}</span>
+                    <div class="overflow-hidden">
+                        <p class="font-bold text-slate-100 truncate">${p.name}</p>
+                        <p class="text-[10px] text-slate-400">Hazır</p>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+
+            // Başlat butonu durumu
+            const startBtn = document.getElementById('btn-start-game');
+            startBtn.disabled = playersList.length < 2;
+        }
+
+        function updateSubmissionList(submittedIds) {
+            const container = document.getElementById('submission-players-list');
+            container.innerHTML = '';
+
+            playersList.forEach(p => {
+                const div = document.createElement('div');
+                div.id = `sub-player-${p.id}`;
+                div.className = 'flex items-center space-x-2 bg-slate-900 border border-slate-800 px-4 py-2 rounded-xl opacity-40 transition-all';
+                div.innerHTML = `
+                    <span class="text-2xl">${p.avatar}</span>
+                    <span class="font-bold text-sm text-slate-200">${p.name}</span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-amber-400 status-dot"></span>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function renderPodium(leaderboard) {
+            const container = document.getElementById('podium-container');
+            container.innerHTML = '';
+
+            const heights = ['h-64', 'h-52', 'h-40'];
+            const medals = ['🥇', '🥈', '🥉'];
+            const colors = ['bg-amber-500', 'bg-slate-400', 'bg-amber-700'];
+
+            const top3 = leaderboard.slice(0, 3);
+            
+            // Sıralama görseli (2. - 1. - 3.)
+            const order = top3.length === 1 ? [0] : top3.length === 2 ? [1, 0] : [1, 0, 2];
+
+            order.forEach(idx => {
+                if (!top3[idx]) return;
+                const p = top3[idx];
+                const col = document.createElement('div');
+                col.className = 'flex flex-col items-center flex-1 max-w-[180px]';
+                col.innerHTML = `
+                    <span class="text-5xl mb-2">${p.avatar}</span>
+                    <span class="font-black text-lg text-white mb-1 truncate w-full text-center">${p.name}</span>
+                    <span class="text-xs font-bold text-purple-300 mb-2">${p.score} Puan</span>
+                    <div class="w-full ${heights[idx]} ${colors[idx]} rounded-t-3xl flex flex-col items-center justify-start pt-4 shadow-2xl">
+                        <span class="text-4xl">${medals[idx]}</span>
+                        <span class="font-black text-white text-2xl mt-1">${idx + 1}</span>
+                    </div>
+                `;
+                container.appendChild(col);
+            });
+        }
+
+        function spawnReaction(emoji) {
+            const bubble = document.createElement('div');
+            bubble.className = 'reaction-bubble';
+            bubble.innerText = emoji;
+            bubble.style.left = `${Math.random() * 80 + 10}%`;
+            document.body.appendChild(bubble);
+            setTimeout(() => bubble.remove(), 2000);
+        }
+
+        function startGame() {
+            if (socket) socket.send(JSON.stringify({ action: "start_game" }));
+        }
+
+        function nextRound() {
+            if (socket) socket.send(JSON.stringify({ action: "next_round" }));
+        }
+
+        function resetGame() {
+            if (socket) socket.send(JSON.stringify({ action: "reset_game" }));
+        }
+
+        // Başlat
+        connectWebSocket();
+    </script>
+</body>
+</html>
